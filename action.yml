@@ -1,0 +1,39 @@
+name: 'terraform_tools_tfsec'
+description: ''
+author: 'Paul Kelleher'
+inputs:
+    inputs:
+      terraform_branch:
+        default: "main"
+        type: string
+      terraform_folder:
+        type: string
+      deployment_identifier:
+        type: string
+        default: 'project_name'
+runs:
+  using: "composite"
+    container:
+      image: tfsec/tfsec:latest
+      options: --user root
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          branch: ${{ inputs.terraform_branch }}
+      - run: |
+          tfsec --soft-fail --out=/tfsec.sarif --format=sarif --force-all-dirs
+        shell: sh
+      - uses: actions/upload-artifact@v3
+        with:
+          name: tfsec.sarif
+          path: /tfsec.sarif
+      - run: |
+          cat <<EOF > $GITHUB_STEP_SUMMARY
+          ## TFSec Summary
+          [tfsec @Aqua](https://aquasecurity.github.io/tfsec/v1.28.1/)
+          ---
+          author: Paul Kelleher, EIT-DevOps
+          created: 28/11/2022
+          EOF
+        shell: sh
